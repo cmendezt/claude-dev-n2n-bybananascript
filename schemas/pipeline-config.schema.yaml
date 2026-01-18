@@ -1,0 +1,397 @@
+# Pipeline Configuration Schema
+# This schema defines all possible configurations for the dev-pipeline plugin
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Dev Pipeline Configuration"
+description: "Configuration schema for the dev-pipeline autonomous development plugin"
+
+type: object
+properties:
+  # Stack Configuration
+  stack:
+    type: object
+    description: "Technology stack configuration"
+    properties:
+      framework:
+        type: string
+        enum: [react, vue, nextjs, express, custom]
+        default: react
+        description: "Frontend/backend framework"
+      language:
+        type: string
+        enum: [typescript, javascript]
+        default: typescript
+      styling:
+        type: string
+        enum: [tailwind, css-modules, styled-components, sass, none]
+        default: tailwind
+      stateManagement:
+        type: string
+        enum: [react-query, zustand, redux, pinia, none]
+        default: react-query
+      testing:
+        type: object
+        properties:
+          unit:
+            type: string
+            enum: [vitest, jest, none]
+            default: vitest
+          e2e:
+            type: string
+            enum: [playwright, cypress, none]
+            default: playwright
+
+  # Database Configuration
+  database:
+    type: object
+    description: "Database and backend configuration"
+    properties:
+      type:
+        type: string
+        enum: [supabase, postgresql, mysql, mongodb, firebase, custom, none]
+        default: supabase
+        description: "Database type"
+
+      # Supabase-specific config
+      supabase:
+        type: object
+        properties:
+          projectRef:
+            type: string
+            description: "Supabase project reference"
+          generateTypes:
+            type: boolean
+            default: true
+            description: "Auto-generate TypeScript types from schema"
+          useAuth:
+            type: boolean
+            default: true
+            description: "Use Supabase Auth"
+          useStorage:
+            type: boolean
+            default: false
+            description: "Use Supabase Storage"
+          useRealtime:
+            type: boolean
+            default: false
+            description: "Use Supabase Realtime"
+
+      # Direct PostgreSQL config
+      postgresql:
+        type: object
+        properties:
+          connectionString:
+            type: string
+            default: "env(DATABASE_URL)"
+          orm:
+            type: string
+            enum: [prisma, drizzle, typeorm, raw]
+            default: prisma
+          pooling:
+            type: boolean
+            default: true
+
+      # MySQL config
+      mysql:
+        type: object
+        properties:
+          connectionString:
+            type: string
+            default: "env(DATABASE_URL)"
+          orm:
+            type: string
+            enum: [prisma, drizzle, typeorm, raw]
+            default: prisma
+
+      # MongoDB config
+      mongodb:
+        type: object
+        properties:
+          connectionString:
+            type: string
+            default: "env(MONGODB_URI)"
+          odm:
+            type: string
+            enum: [mongoose, native]
+            default: mongoose
+
+      # Firebase config
+      firebase:
+        type: object
+        properties:
+          projectId:
+            type: string
+          useEmulator:
+            type: boolean
+            default: false
+          useAuth:
+            type: boolean
+            default: true
+          useFirestore:
+            type: boolean
+            default: true
+          useStorage:
+            type: boolean
+            default: false
+
+      # Custom database config
+      custom:
+        type: object
+        properties:
+          description:
+            type: string
+            description: "Description for agents to understand the setup"
+          clientPath:
+            type: string
+            description: "Path to existing database client"
+
+  # Deployment Configuration
+  deployment:
+    type: object
+    description: "Deployment platform configuration"
+    properties:
+      platform:
+        type: string
+        enum: [vercel, netlify, railway, render, custom, none]
+        default: vercel
+
+      vercel:
+        type: object
+        properties:
+          teamId:
+            type: string
+          projectName:
+            type: string
+          framework:
+            type: string
+            enum: [vite, nextjs, other]
+
+      netlify:
+        type: object
+        properties:
+          siteId:
+            type: string
+          buildCommand:
+            type: string
+            default: "npm run build"
+          publishDir:
+            type: string
+            default: "dist"
+
+      railway:
+        type: object
+        properties:
+          projectId:
+            type: string
+          serviceId:
+            type: string
+
+      custom:
+        type: object
+        properties:
+          deployCommand:
+            type: string
+          description:
+            type: string
+
+  # Pipeline Behavior
+  pipeline:
+    type: object
+    description: "Pipeline automation settings"
+    properties:
+      autoCommit:
+        type: boolean
+        default: true
+        description: "Auto-commit after changes"
+      autoFormat:
+        type: boolean
+        default: true
+        description: "Auto-format code before commits"
+      requireCodeReview:
+        type: boolean
+        default: true
+        description: "Require code review phase"
+      requireQA:
+        type: boolean
+        default: true
+        description: "Require QA testing phase"
+      requireDesign:
+        type: boolean
+        default: true
+        description: "Require design phase for new features"
+      branchPrefix:
+        type: string
+        default: "feature/"
+        description: "Prefix for feature branches"
+
+  # Integration Configuration
+  integrations:
+    type: object
+    description: "External service integrations"
+    properties:
+      github:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          owner:
+            type: string
+          defaultBranch:
+            type: string
+            default: "main"
+
+      jira:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          cloudId:
+            type: string
+          projectKey:
+            type: string
+          defaultIssueType:
+            type: string
+            default: "Task"
+
+      slack:
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          webhookUrl:
+            type: string
+          channel:
+            type: string
+
+  # Agent Configuration
+  agents:
+    type: object
+    description: "Per-agent model and behavior settings"
+    properties:
+      productManager:
+        type: object
+        properties:
+          model:
+            type: string
+            enum: [opus, sonnet, haiku]
+            default: opus
+
+      uiDesigner:
+        type: object
+        properties:
+          model:
+            type: string
+            enum: [opus, sonnet, haiku]
+            default: opus
+          generateWireframes:
+            type: boolean
+            default: true
+
+      techArchitect:
+        type: object
+        properties:
+          model:
+            type: string
+            enum: [opus, sonnet, haiku]
+            default: opus
+
+      developer:
+        type: object
+        properties:
+          model:
+            type: string
+            enum: [opus, sonnet, haiku]
+            default: sonnet
+          autoFormat:
+            type: boolean
+            default: true
+
+      codeReviewer:
+        type: object
+        properties:
+          model:
+            type: string
+            enum: [opus, sonnet, haiku]
+            default: sonnet
+          strictMode:
+            type: boolean
+            default: true
+
+      qaEngineer:
+        type: object
+        properties:
+          model:
+            type: string
+            enum: [opus, sonnet, haiku]
+            default: sonnet
+          generateE2E:
+            type: boolean
+            default: true
+          recordGifs:
+            type: boolean
+            default: true
+
+      devopsEngineer:
+        type: object
+        properties:
+          model:
+            type: string
+            enum: [opus, sonnet, haiku]
+            default: sonnet
+          autoRollback:
+            type: boolean
+            default: true
+
+  # Project Metadata (auto-detected or set during onboard)
+  project:
+    type: object
+    description: "Project metadata"
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      rootDir:
+        type: string
+        default: "."
+      srcDir:
+        type: string
+        default: "src"
+      testsDir:
+        type: string
+        default: "tests"
+      docsDir:
+        type: string
+        default: "docs"
+
+# Default configuration
+default:
+  stack:
+    framework: react
+    language: typescript
+    styling: tailwind
+    stateManagement: react-query
+    testing:
+      unit: vitest
+      e2e: playwright
+  database:
+    type: supabase
+  deployment:
+    platform: vercel
+  pipeline:
+    autoCommit: true
+    autoFormat: true
+    requireCodeReview: true
+    requireQA: true
+    requireDesign: true
+    branchPrefix: "feature/"
+  integrations:
+    github:
+      enabled: true
+    jira:
+      enabled: true
+    slack:
+      enabled: false

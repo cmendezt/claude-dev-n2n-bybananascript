@@ -1,0 +1,202 @@
+# Template Registry
+# Defines available project templates and their configurations
+
+version: "1.0"
+
+templates:
+  react-typescript:
+    name: "React + TypeScript + Vite"
+    description: "Modern React SPA with TypeScript, Tailwind CSS, React Query, and Vitest"
+    path: "./react-typescript"
+    stack:
+      framework: react
+      language: typescript
+      styling: tailwind
+      stateManagement: react-query
+      testing:
+        unit: vitest
+        e2e: playwright
+    database:
+      default: supabase
+      supported:
+        - supabase
+        - postgresql
+        - mongodb
+        - firebase
+        - none
+    deployment:
+      default: vercel
+      supported:
+        - vercel
+        - netlify
+        - railway
+    tags:
+      - spa
+      - frontend
+      - vite
+      - recommended
+
+  nextjs:
+    name: "Next.js Full Stack"
+    description: "Next.js 14+ with App Router, TypeScript, Tailwind CSS, and Server Components"
+    path: "./nextjs"
+    stack:
+      framework: nextjs
+      language: typescript
+      styling: tailwind
+      stateManagement: react-query
+      testing:
+        unit: vitest
+        e2e: playwright
+    database:
+      default: postgresql
+      supported:
+        - supabase
+        - postgresql
+        - mongodb
+        - firebase
+    deployment:
+      default: vercel
+      supported:
+        - vercel
+        - netlify
+        - railway
+    features:
+      - server-components
+      - api-routes
+      - middleware
+      - edge-runtime
+    tags:
+      - fullstack
+      - ssr
+      - api-routes
+
+  vue-typescript:
+    name: "Vue 3 + TypeScript + Vite"
+    description: "Vue 3 with Composition API, TypeScript, Pinia, and Tailwind CSS"
+    path: "./vue-typescript"
+    stack:
+      framework: vue
+      language: typescript
+      styling: tailwind
+      stateManagement: pinia
+      testing:
+        unit: vitest
+        e2e: playwright
+    database:
+      default: supabase
+      supported:
+        - supabase
+        - postgresql
+        - mongodb
+        - firebase
+        - none
+    deployment:
+      default: vercel
+      supported:
+        - vercel
+        - netlify
+    tags:
+      - spa
+      - frontend
+      - vite
+      - composition-api
+
+  node-express:
+    name: "Node.js + Express API"
+    description: "Backend-only REST API with Express, TypeScript, and comprehensive middleware"
+    path: "./node-express"
+    stack:
+      framework: express
+      language: typescript
+      styling: none
+      stateManagement: none
+      testing:
+        unit: vitest
+        e2e: none
+    database:
+      default: postgresql
+      supported:
+        - postgresql
+        - mysql
+        - mongodb
+        - supabase
+    deployment:
+      default: railway
+      supported:
+        - railway
+        - render
+        - vercel
+    features:
+      - rest-api
+      - middleware
+      - error-handling
+      - validation
+    tags:
+      - backend
+      - api
+      - rest
+
+# Database client templates
+# These are copied into projects based on database.type configuration
+database_clients:
+  supabase:
+    path: "./_database/supabase"
+    files:
+      - client.ts
+      - types.ts
+    envVars:
+      - NEXT_PUBLIC_SUPABASE_URL
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY
+      - SUPABASE_SERVICE_ROLE_KEY
+
+  postgresql-prisma:
+    path: "./_database/postgresql-prisma"
+    files:
+      - client.ts
+      - schema.prisma
+    envVars:
+      - DATABASE_URL
+    postInstall:
+      - npx prisma generate
+
+  postgresql-drizzle:
+    path: "./_database/postgresql-drizzle"
+    files:
+      - client.ts
+      - schema.ts
+      - drizzle.config.ts
+    envVars:
+      - DATABASE_URL
+    postInstall:
+      - npx drizzle-kit generate
+
+  mongodb-mongoose:
+    path: "./_database/mongodb-mongoose"
+    files:
+      - client.ts
+      - models/index.ts
+    envVars:
+      - MONGODB_URI
+
+  firebase:
+    path: "./_database/firebase"
+    files:
+      - client.ts
+      - collections.ts
+    envVars:
+      - NEXT_PUBLIC_FIREBASE_API_KEY
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID
+
+  none:
+    path: "./_database/none"
+    files:
+      - README.md
+    envVars: []
+
+# Metadata
+metadata:
+  defaultTemplate: react-typescript
+  defaultDatabase: supabase
+  defaultDeployment: vercel

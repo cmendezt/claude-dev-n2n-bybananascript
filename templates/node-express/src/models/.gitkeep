@@ -1,0 +1,4 @@
+# Models directory
+# Place your data models here
+# Example: user.model.ts, post.model.ts
+# For Prisma: define models in prisma/schema.prisma

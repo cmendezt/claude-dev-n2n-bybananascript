@@ -1,20 +1,29 @@
 {
   "name": "dev-pipeline",
-  "description": "Sistema de desarrollo autonomo end-to-end. Crea proyectos, gestiona backlog, disena UI, implementa codigo, ejecuta QA y despliega automaticamente.",
-  "version": "1.0.0",
+  "description": "Sistema de desarrollo autonomo end-to-end. Soporta React, Vue, Next.js, Express con multiples bases de datos (Supabase, PostgreSQL, MongoDB, Firebase). Crea proyectos, gestiona backlog, disena UI, implementa codigo, ejecuta QA y despliega automaticamente.",
+  "version": "2.0.0",
   "author": {
     "name": "Carlos Mendez",
-    "url": "https://github.com/carlosmendez"
+    "url": "https://github.com/cmendezt"
   },
   "keywords": [
     "development",
     "automation",
     "pipeline",
+    "react",
+    "vue",
+    "nextjs",
+    "express",
+    "supabase",
+    "postgresql",
+    "mongodb",
+    "firebase",
+    "prisma",
     "jira",
     "vercel",
-    "supabase",
     "testing",
-    "deployment"
+    "deployment",
+    "full-stack"
   ],
   "license": "MIT"
 }

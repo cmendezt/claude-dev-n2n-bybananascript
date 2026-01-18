@@ -25,6 +25,9 @@ Implementas features siguiendo especificaciones tecnicas con alta calidad.
 ### 1. Preparacion
 
 ```bash
+# Leer configuracion del proyecto
+cat .claude/pipeline-config.yaml
+
 # Verificar que existe plan tecnico
 ls docs/tech-specs/{ticket-id}/
 
@@ -36,6 +39,11 @@ cat docs/tech-specs/{ticket-id}/subtasks.json
 git checkout -b feature/{ticket-id}
 git push -u origin feature/{ticket-id}
 ```
+
+**IMPORTANTE**: Adaptar todo el codigo segun la configuracion en `pipeline-config.yaml`:
+- `stack.framework`: react | vue | nextjs | express
+- `database.type`: supabase | postgresql | mongodb | firebase | none
+- `stack.stateManagement`: react-query | pinia | zustand | none
 
 ### 2. Analisis Pre-Implementacion
 
@@ -159,6 +167,137 @@ export async function deleteFeature(id: string): Promise<void> {
 }
 ```
 
+#### Si database.type = "postgresql" (Prisma)
+
+```typescript
+// src/api/feature.ts
+import { prisma } from '@/lib/db';
+import type { Feature, CreateFeatureInput, UpdateFeatureInput, FeatureFilters } from '@/types/feature';
+
+export async function getFeatures(filters?: FeatureFilters): Promise<Feature[]> {
+  return prisma.feature.findMany({
+    where: {
+      ...(filters?.status && { status: filters.status }),
+      ...(filters?.search && {
+        title: { contains: filters.search, mode: 'insensitive' }
+      }),
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function getFeature(id: string): Promise<Feature> {
+  const feature = await prisma.feature.findUnique({ where: { id } });
+  if (!feature) throw new Error('Feature not found');
+  return feature;
+}
+
+export async function createFeature(input: CreateFeatureInput): Promise<Feature> {
+  return prisma.feature.create({ data: input });
+}
+
+export async function updateFeature(id: string, input: UpdateFeatureInput): Promise<Feature> {
+  return prisma.feature.update({ where: { id }, data: input });
+}
+
+export async function deleteFeature(id: string): Promise<void> {
+  await prisma.feature.delete({ where: { id } });
+}
+```
+
+#### Si database.type = "mongodb" (Mongoose)
+
+```typescript
+// src/api/feature.ts
+import { Feature as FeatureModel } from '@/models/Feature';
+import type { Feature, CreateFeatureInput, UpdateFeatureInput, FeatureFilters } from '@/types/feature';
+
+export async function getFeatures(filters?: FeatureFilters): Promise<Feature[]> {
+  const query: Record<string, unknown> = {};
+  if (filters?.status) query.status = filters.status;
+  if (filters?.search) query.title = { $regex: filters.search, $options: 'i' };
+
+  return FeatureModel.find(query).sort({ createdAt: -1 }).lean();
+}
+
+export async function getFeature(id: string): Promise<Feature> {
+  const feature = await FeatureModel.findById(id).lean();
+  if (!feature) throw new Error('Feature not found');
+  return feature;
+}
+
+export async function createFeature(input: CreateFeatureInput): Promise<Feature> {
+  const feature = new FeatureModel(input);
+  await feature.save();
+  return feature.toObject();
+}
+
+export async function updateFeature(id: string, input: UpdateFeatureInput): Promise<Feature> {
+  const feature = await FeatureModel.findByIdAndUpdate(id, input, { new: true }).lean();
+  if (!feature) throw new Error('Feature not found');
+  return feature;
+}
+
+export async function deleteFeature(id: string): Promise<void> {
+  await FeatureModel.findByIdAndDelete(id);
+}
+```
+
+#### Si database.type = "firebase"
+
+```typescript
+// src/api/feature.ts
+import { db } from '@/lib/firebase';
+import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
+import type { Feature, CreateFeatureInput, UpdateFeatureInput, FeatureFilters } from '@/types/feature';
+
+const COLLECTION = 'features';
+
+export async function getFeatures(filters?: FeatureFilters): Promise<Feature[]> {
+  let q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
+  if (filters?.status) {
+    q = query(q, where('status', '==', filters.status));
+  }
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feature));
+}
+
+export async function getFeature(id: string): Promise<Feature> {
+  const docRef = doc(db, COLLECTION, id);
+  const snapshot = await getDoc(docRef);
+  if (!snapshot.exists()) throw new Error('Feature not found');
+  return { id: snapshot.id, ...snapshot.data() } as Feature;
+}
+
+export async function createFeature(input: CreateFeatureInput): Promise<Feature> {
+  const docRef = await addDoc(collection(db, COLLECTION), {
+    ...input,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  return getFeature(docRef.id);
+}
+
+export async function updateFeature(id: string, input: UpdateFeatureInput): Promise<Feature> {
+  const docRef = doc(db, COLLECTION, id);
+  await updateDoc(docRef, { ...input, updatedAt: new Date() });
+  return getFeature(id);
+}
+
+export async function deleteFeature(id: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTION, id));
+}
+```
+
+#### Si database.type = "none" o API externa
+
+Seguir los patrones existentes en el codebase. Buscar:
+```bash
+# Ver como se manejan datos actualmente
+grep -r "fetch\|axios\|api" src/ --include="*.ts" | head -10
+```
+
 #### Fase 2: Hooks
 
 ```typescript
@@ -225,6 +364,111 @@ export function useDeleteFeature() {
     },
   });
 }
+```
+
+#### Si stack.framework = "vue" (Pinia Store)
+
+```typescript
+// src/stores/feature.ts
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import { getFeatures, getFeature, createFeature, updateFeature, deleteFeature } from '@/api/feature';
+import type { Feature, CreateFeatureInput, UpdateFeatureInput, FeatureFilters } from '@/types/feature';
+
+export const useFeatureStore = defineStore('features', () => {
+  const features = ref<Feature[]>([]);
+  const currentFeature = ref<Feature | null>(null);
+  const isLoading = ref(false);
+  const error = ref<Error | null>(null);
+
+  const featureCount = computed(() => features.value.length);
+
+  async function fetchFeatures(filters?: FeatureFilters) {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      features.value = await getFeatures(filters);
+    } catch (e) {
+      error.value = e instanceof Error ? e : new Error('Failed to fetch features');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function fetchFeature(id: string) {
+    isLoading.value = true;
+    try {
+      currentFeature.value = await getFeature(id);
+    } catch (e) {
+      error.value = e instanceof Error ? e : new Error('Failed to fetch feature');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function addFeature(input: CreateFeatureInput) {
+    const newFeature = await createFeature(input);
+    features.value.unshift(newFeature);
+    return newFeature;
+  }
+
+  async function editFeature(id: string, input: UpdateFeatureInput) {
+    const updated = await updateFeature(id, input);
+    const index = features.value.findIndex(f => f.id === id);
+    if (index !== -1) features.value[index] = updated;
+    return updated;
+  }
+
+  async function removeFeature(id: string) {
+    await deleteFeature(id);
+    features.value = features.value.filter(f => f.id !== id);
+  }
+
+  return {
+    features, currentFeature, isLoading, error, featureCount,
+    fetchFeatures, fetchFeature, addFeature, editFeature, removeFeature
+  };
+});
+```
+
+#### Si stack.framework = "express" (Service Layer)
+
+```typescript
+// src/services/feature.service.ts
+import { prisma } from '@/config/database';
+import type { Feature, CreateFeatureInput, UpdateFeatureInput, FeatureFilters } from '@/types/feature';
+
+export class FeatureService {
+  async findAll(filters?: FeatureFilters): Promise<Feature[]> {
+    return prisma.feature.findMany({
+      where: {
+        ...(filters?.status && { status: filters.status }),
+        ...(filters?.search && {
+          title: { contains: filters.search, mode: 'insensitive' }
+        }),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findById(id: string): Promise<Feature | null> {
+    return prisma.feature.findUnique({ where: { id } });
+  }
+
+  async create(data: CreateFeatureInput): Promise<Feature> {
+    return prisma.feature.create({ data });
+  }
+
+  async update(id: string, data: UpdateFeatureInput): Promise<Feature> {
+    return prisma.feature.update({ where: { id }, data });
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.feature.delete({ where: { id } });
+  }
+}
+
+export const featureService = new FeatureService();
 ```
 
 #### Fase 3: Componentes

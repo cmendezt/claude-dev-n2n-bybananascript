@@ -1,0 +1,312 @@
+---
+name: onboard-project
+description: Analyze an existing project and generate pipeline configuration
+---
+
+# Onboard Project Skill
+
+This skill analyzes an existing codebase and generates appropriate `pipeline-config.yaml` configuration.
+
+## Execution Steps
+
+### Step 1: Gather Project Information
+
+```bash
+# Get project root (use argument or current directory)
+PROJECT_ROOT="${1:-.}"
+cd "$PROJECT_ROOT"
+
+# Check if it's a valid project
+if [ ! -f "package.json" ]; then
+  echo "Error: No package.json found. Is this a JavaScript/TypeScript project?"
+  exit 1
+fi
+```
+
+### Step 2: Detect Framework
+
+Read `package.json` and check dependencies:
+
+```javascript
+// Framework detection rules
+const frameworkDetection = {
+  'next': 'nextjs',
+  'react': 'react',
+  'vue': 'vue',
+  'express': 'express',
+  '@angular/core': 'angular'
+};
+
+// Check dependencies and devDependencies
+// Priority: next > vue > react > express (since Next.js includes React)
+```
+
+**Detection commands:**
+```bash
+# Check for Next.js
+grep -q '"next"' package.json && echo "nextjs"
+
+# Check for Vue
+grep -q '"vue"' package.json && echo "vue"
+
+# Check for React (but not Next.js)
+grep -q '"react"' package.json && ! grep -q '"next"' package.json && echo "react"
+
+# Check for Express
+grep -q '"express"' package.json && echo "express"
+```
+
+### Step 3: Detect Language
+
+```bash
+# Check for TypeScript
+if [ -f "tsconfig.json" ]; then
+  echo "typescript"
+else
+  echo "javascript"
+fi
+```
+
+### Step 4: Detect Styling
+
+```bash
+# Check for Tailwind
+[ -f "tailwind.config.js" ] || [ -f "tailwind.config.ts" ] && echo "tailwind"
+
+# Check for styled-components
+grep -q '"styled-components"' package.json && echo "styled-components"
+
+# Check for CSS modules (common pattern)
+find src -name "*.module.css" -o -name "*.module.scss" 2>/dev/null | head -1 && echo "css-modules"
+
+# Check for Sass
+grep -q '"sass"' package.json && echo "sass"
+```
+
+### Step 5: Detect Database
+
+```bash
+# Check for Supabase
+if grep -rq "supabase" src/ 2>/dev/null || grep -q '"@supabase/supabase-js"' package.json; then
+  echo "supabase"
+fi
+
+# Check for Prisma
+if [ -d "prisma" ] || [ -f "prisma/schema.prisma" ]; then
+  # Determine database type from schema
+  if grep -q 'provider = "postgresql"' prisma/schema.prisma 2>/dev/null; then
+    echo "postgresql:prisma"
+  elif grep -q 'provider = "mysql"' prisma/schema.prisma 2>/dev/null; then
+    echo "mysql:prisma"
+  fi
+fi
+
+# Check for Drizzle
+if grep -q '"drizzle-orm"' package.json; then
+  echo "postgresql:drizzle"
+fi
+
+# Check for MongoDB/Mongoose
+if grep -q '"mongoose"' package.json; then
+  echo "mongodb:mongoose"
+fi
+
+# Check for Firebase
+if [ -f "firebase.json" ] || grep -q '"firebase"' package.json; then
+  echo "firebase"
+fi
+```
+
+### Step 6: Detect Testing Framework
+
+```bash
+# Check for Vitest
+grep -q '"vitest"' package.json && echo "unit:vitest"
+
+# Check for Jest
+grep -q '"jest"' package.json && echo "unit:jest"
+
+# Check for Playwright
+grep -q '"@playwright/test"' package.json && echo "e2e:playwright"
+
+# Check for Cypress
+grep -q '"cypress"' package.json && echo "e2e:cypress"
+```
+
+### Step 7: Detect State Management
+
+```bash
+# React Query / TanStack Query
+grep -q '"@tanstack/react-query"' package.json && echo "react-query"
+
+# Zustand
+grep -q '"zustand"' package.json && echo "zustand"
+
+# Redux
+grep -q '"@reduxjs/toolkit"' package.json && echo "redux"
+
+# Pinia (Vue)
+grep -q '"pinia"' package.json && echo "pinia"
+```
+
+### Step 8: Detect Deployment Platform
+
+```bash
+# Vercel
+[ -f "vercel.json" ] && echo "vercel"
+
+# Netlify
+[ -f "netlify.toml" ] && echo "netlify"
+
+# Railway
+[ -f "railway.json" ] && echo "railway"
+```
+
+### Step 9: Detect Project Structure
+
+```bash
+# Common source directories
+for dir in src app lib; do
+  [ -d "$dir" ] && echo "srcDir:$dir"
+done
+
+# Common test directories
+for dir in tests test __tests__ spec; do
+  [ -d "$dir" ] && echo "testsDir:$dir"
+done
+
+# Docs directory
+[ -d "docs" ] && echo "docsDir:docs"
+```
+
+### Step 10: Check Existing Integrations
+
+```bash
+# GitHub
+[ -d ".git" ] && echo "github:true"
+
+# Get remote URL for owner detection
+git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]\([^/]*\).*/\1/'
+```
+
+### Step 11: Present Findings to User
+
+After detection, present the findings using `AskUserQuestion`:
+
+```markdown
+## Detected Configuration
+
+| Category | Detected Value |
+|----------|---------------|
+| Framework | {framework} |
+| Language | {language} |
+| Styling | {styling} |
+| Database | {database} |
+| Unit Testing | {unitTest} |
+| E2E Testing | {e2eTest} |
+| State Management | {stateManagement} |
+| Deployment | {deployment} |
+
+### Directories
+- Source: {srcDir}
+- Tests: {testsDir}
+- Docs: {docsDir}
+
+Is this configuration correct?
+```
+
+Allow user to:
+1. Confirm as-is
+2. Edit specific values
+3. Cancel onboarding
+
+### Step 12: Generate Configuration
+
+Once confirmed, generate `.claude/pipeline-config.yaml`:
+
+```yaml
+# Auto-generated by /dev-pipeline:onboard
+# Generated at: {timestamp}
+# Project: {projectName}
+
+stack:
+  framework: {framework}
+  language: {language}
+  styling: {styling}
+  stateManagement: {stateManagement}
+  testing:
+    unit: {unitTest}
+    e2e: {e2eTest}
+
+database:
+  type: {databaseType}
+  {databaseSpecificConfig}
+
+deployment:
+  platform: {deployment}
+
+pipeline:
+  autoCommit: true
+  autoFormat: true
+  requireCodeReview: true
+  requireQA: true
+  requireDesign: true
+  branchPrefix: "feature/"
+
+integrations:
+  github:
+    enabled: {githubEnabled}
+    owner: {githubOwner}
+  jira:
+    enabled: false  # Configure via /dev-pipeline:config
+  slack:
+    enabled: false
+
+project:
+  name: {projectName}
+  rootDir: "."
+  srcDir: {srcDir}
+  testsDir: {testsDir}
+  docsDir: {docsDir}
+```
+
+### Step 13: Create Missing Directories (Optional)
+
+Ask user if they want to create standard directories:
+
+```bash
+# Create docs directory if missing
+mkdir -p docs/designs docs/tech-specs docs/reviews
+
+# Create tests directory if missing
+mkdir -p tests/unit tests/e2e
+```
+
+### Step 14: Success Message
+
+```markdown
+## Onboarding Complete!
+
+Configuration saved to: `.claude/pipeline-config.yaml`
+
+Next steps:
+1. Review and adjust config: `/dev-pipeline:config`
+2. Set up Jira integration: `/dev-pipeline:config` → Integrations
+3. Start working on tickets: `/dev-pipeline:start-ticket TICKET-ID`
+
+The pipeline will now adapt to your {framework} + {database} stack.
+```
+
+## Error Handling
+
+- If no `package.json` found: Suggest this is for JS/TS projects only
+- If framework not detected: Ask user to specify manually
+- If database not detected: Default to `none`, explain they can configure later
+- If conflicting signals: Ask user to clarify (e.g., both React and Vue detected)
+
+## Idempotency
+
+Running onboard multiple times is safe:
+- Will re-detect and show current vs new config
+- Will ask before overwriting existing `pipeline-config.yaml`
+- Preserves manual customizations if user chooses to merge

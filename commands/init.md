@@ -20,9 +20,29 @@ When executed without arguments, this command will interactively ask for:
 
 1. **Project name** (slug format, e.g., `my-awesome-app`)
 2. **Description** (brief description of the project)
-3. **Stack** (react-typescript, nextjs, etc.)
-4. **Services to configure** (GitHub, Supabase, Vercel, Jira)
-5. **GitHub organization/owner**
+3. **Stack** (see options below)
+4. **Database** (see options below)
+5. **Services to configure** (GitHub, Vercel, Jira, Slack)
+6. **GitHub organization/owner**
+
+### Stack Options
+
+| Stack | Description |
+|-------|-------------|
+| `react-typescript` | React 18 + Vite + Tailwind + React Query (default) |
+| `nextjs` | Next.js 14 App Router + Tailwind + React Query |
+| `vue-typescript` | Vue 3 + Vite + Tailwind + Pinia |
+| `node-express` | Express + TypeScript (backend only) |
+
+### Database Options
+
+| Database | Description |
+|----------|-------------|
+| `supabase` | Supabase (PostgreSQL + Auth + Storage) - default |
+| `postgresql` | Direct PostgreSQL with Prisma ORM |
+| `mongodb` | MongoDB with Mongoose ODM |
+| `firebase` | Firebase (Firestore + Auth) |
+| `none` | No database (configure later) |
 
 ## Process
 
@@ -32,6 +52,7 @@ Ask the user for:
 - Project name (required)
 - Description (required)
 - Stack selection (default: react-typescript)
+- Database selection (default: based on stack)
 - Services to configure (checkboxes)
 
 ### Step 2: Create GitHub Repository
@@ -44,20 +65,82 @@ cd {project-name}
 
 ### Step 3: Initialize Project from Template
 
-Copy the selected template:
+Read the template registry to get the correct template:
 ```bash
+cat {plugin-path}/templates/registry.yaml
+```
+
+Copy the selected template based on stack choice:
+```bash
+# For react-typescript
 cp -r {plugin-path}/templates/react-typescript/* .
+
+# For nextjs
+cp -r {plugin-path}/templates/nextjs/* .
+
+# For vue-typescript
+cp -r {plugin-path}/templates/vue-typescript/* .
+
+# For node-express
+cp -r {plugin-path}/templates/node-express/* .
+```
+
+Then copy the appropriate database client:
+```bash
+# For supabase
+cp -r {plugin-path}/templates/_database/supabase/* src/lib/
+
+# For postgresql (prisma)
+cp -r {plugin-path}/templates/_database/postgresql-prisma/* src/lib/
+npx prisma init
+
+# For mongodb
+cp -r {plugin-path}/templates/_database/mongodb-mongoose/* src/lib/
+
+# For firebase
+cp -r {plugin-path}/templates/_database/firebase/* src/lib/
+
+# For none
+cp -r {plugin-path}/templates/_database/none/* src/lib/
+```
+
+Install dependencies:
+```bash
 npm install
 ```
 
-### Step 4: Configure Supabase (if selected)
+### Step 4: Configure Database (based on selection)
 
+**If Supabase:**
 ```bash
 supabase init
 supabase link --project-ref {ref}
 supabase db push
 supabase gen types typescript --local > src/types/database.ts
 ```
+
+**If PostgreSQL (Prisma):**
+```bash
+# Ask user for DATABASE_URL or help create one
+npx prisma generate
+npx prisma db push
+```
+
+**If MongoDB:**
+```bash
+# Ask user for MONGODB_URI
+# Verify connection works
+```
+
+**If Firebase:**
+```bash
+# Ask user for Firebase project ID
+# Initialize firebase config
+firebase init firestore
+```
+
+**If None:**
+Skip database configuration.
 
 ### Step 5: Configure Vercel (if selected)
 
