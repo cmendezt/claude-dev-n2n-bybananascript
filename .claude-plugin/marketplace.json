@@ -1,9 +1,15 @@
 {
   "name": "dev-pipeline-marketplace",
-  "description": "Marketplace for dev-pipeline plugin - Sistema de desarrollo autonomo end-to-end",
-  "plugins": {
-    "dev-pipeline": {
-      "path": ".."
+  "owner": {
+    "name": "Carlos Mendez",
+    "email": "cmendezt@github.com"
+  },
+  "plugins": [
+    {
+      "name": "dev-pipeline",
+      "source": "..",
+      "description": "Sistema de desarrollo autonomo end-to-end",
+      "version": "1.0.0"
     }
-  }
+  ]
 }
