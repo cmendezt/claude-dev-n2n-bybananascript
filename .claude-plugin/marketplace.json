@@ -15,7 +15,7 @@
         "name": "Carlos Mendez",
         "email": "cmendezt@github.com"
       },
-      "source": ".",
+      "source": "./",
       "category": "development",
       "homepage": "https://github.com/cmendezt/claude-dev-n2n-bybananascript"
     }
