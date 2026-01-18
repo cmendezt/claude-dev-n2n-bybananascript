@@ -1,0 +1,9 @@
+{
+  "name": "dev-pipeline-marketplace",
+  "description": "Marketplace for dev-pipeline plugin - Sistema de desarrollo autonomo end-to-end",
+  "plugins": {
+    "dev-pipeline": {
+      "path": "."
+    }
+  }
+}

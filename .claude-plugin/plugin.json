@@ -1,0 +1,20 @@
+{
+  "name": "dev-pipeline",
+  "description": "Sistema de desarrollo autonomo end-to-end. Crea proyectos, gestiona backlog, disena UI, implementa codigo, ejecuta QA y despliega automaticamente.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Carlos Mendez",
+    "url": "https://github.com/carlosmendez"
+  },
+  "keywords": [
+    "development",
+    "automation",
+    "pipeline",
+    "jira",
+    "vercel",
+    "supabase",
+    "testing",
+    "deployment"
+  ],
+  "license": "MIT"
+}

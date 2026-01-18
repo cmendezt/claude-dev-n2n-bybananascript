@@ -1,0 +1,55 @@
+{
+  "mcpServers": {
+    "atlassian": {
+      "type": "http",
+      "url": "https://api.atlassian.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${ATLASSIAN_API_TOKEN}"
+      },
+      "description": "Jira and Confluence integration for ticket management and documentation"
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headed", "--save-trace"],
+      "description": "Browser automation and E2E testing with Playwright"
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub integration for repos, PRs and issues"
+    },
+    "supabase": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
+      },
+      "description": "Supabase database and auth management"
+    },
+    "slack": {
+      "type": "http",
+      "url": "https://mcp.slack.com/",
+      "headers": {
+        "X-Slack-Token": "${SLACK_BOT_TOKEN}"
+      },
+      "optional": true,
+      "description": "Slack notifications for pipeline events"
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-filesystem", "--root", "."],
+      "description": "File system access for project operations"
+    }
+  },
+  "defaults": {
+    "timeout": 300000,
+    "retries": 3
+  }
+}

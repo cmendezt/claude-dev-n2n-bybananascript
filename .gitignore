@@ -1,0 +1,11 @@
+# OS
+.DS_Store
+
+# Local config
+*.local.md
+
+# Node modules (if any)
+node_modules/
+
+# Logs
+*.log
